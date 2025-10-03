@@ -2,89 +2,50 @@ name: Build and Deploy to GKE
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
 
 env:
   PROJECT_ID: digital-rhythm-471106-d7
   REGION: asia-south1
   REPOSITORY: docker-repo
-  CLUSTER: cluster-1
   IMAGE_NAME: sample-python-app
-  SERVICE_NAME: sample-python-svc
+  CLUSTER_NAME: cluster-1
+  NAMESPACE: sample-grafana
 
 jobs:
-  build-and-deploy:
+  build-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # 2. Authenticate with GCP
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      # 🔑 Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          project_id: digital-rhythm-471106-d7
-          export_default_credentials: true
+          credentials_json: ${{ secrets.GCP_KEY }}
 
-      # 3. Configure Docker to push to Artifact Registry
+      # 🔑 Configure Docker for Artifact Registry
       - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker image
         run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          IMAGE_URI=$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:latest
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
 
-      # 4. Build and push Docker image
-      - name: Build and push Docker image
+      # (Optional) Deploy to GKE
+      - name: Set up GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER_NAME }}
+          location: ${{ env.REGION }}
+
+      - name: Deploy manifests
         run: |
-          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-          docker build -t $IMAGE .
-          docker push $IMAGE
-
-      # 5. Get GKE credentials
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER }} \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }}
-
-
-      # 7. Apply PersistentVolumeClaim
-      - name: Apply PVC
-        run: kubectl apply -f persistent-volume-claim.yaml
-
-      # 8. Apply Deployment
-      - name: Apply Deployment
-        run: |
-          # Replace image placeholder with actual image
-          sed -i "s|IMAGE_PLACEHOLDER|$IMAGE|g" deployment.yaml
-          kubectl apply -f deployment.yaml
-
-      # 9. Apply Service
-      - name: Apply Service
-        run: kubectl apply -f service.yaml
-
-      # 10. Wait for LoadBalancer external IP
-      - name: Wait for LoadBalancer IP
-        run: |
-          echo "Waiting for LoadBalancer external IP..."
-          for i in {1..30}; do
-            EXTERNAL_IP=$(kubectl -n ${{ env.NAMESPACE }} get svc ${{ env.SERVICE_NAME }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            if [ -n "$EXTERNAL_IP" ]; then
-              echo "LoadBalancer is ready: $EXTERNAL_IP"
-              echo "OPEN IN CHROME: http://$EXTERNAL_IP"
-              break
-            fi
-            echo "Attempt $i: IP not ready yet, waiting 10s..."
-            sleep 10
-          done
-          if [ -z "$EXTERNAL_IP" ]; then
-            echo "ERROR: LoadBalancer IP not allocated after ~5 minutes"
-            exit 1
-          fi
-
-      # 11. Apply HPA
-      - name: Apply HPA
-        run: kubectl apply -f hpa.yaml
+          kubectl apply -f persistent-volume-claim.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f deployment.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f service-loadbalancer.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f hpa.yaml -n ${{ env.NAMESPACE }}
