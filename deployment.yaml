@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-python-app
+  namespace: sample-grafana
+  labels:
+    app: sample-python-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-python-app
+  template:
+    metadata:
+      labels:
+        app: sample-python-app
+    spec:
+      containers:
+        - name: web
+          image: asia-south1-docker.pkg.dev/digital-rhythm-471106-d7/docker-repo/sample-python-app@sha256:ea0635124708cff0128fcda36d38356ccec14de779770de2f9c763620d101736
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: app-storage
+              mountPath: /data
+      volumes:
+        - name: app-storage
+          persistentVolumeClaim:
+            claimName: sample-app-pvc
