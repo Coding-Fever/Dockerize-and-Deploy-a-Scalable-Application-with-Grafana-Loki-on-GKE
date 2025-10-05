@@ -47,5 +47,5 @@ jobs:
         run: |
           kubectl apply -f persistent-volume-claim.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f deployment.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f service-loadbalancer.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f service.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f hpa.yaml -n ${{ env.NAMESPACE }}
