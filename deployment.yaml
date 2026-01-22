@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: asia-south1-docker.pkg.dev/digital-rhythm-471106-d7/docker-repo/sample-python-app@sha256:ea0635124708cff0128fcda36d38356ccec14de779770de2f9c763620d101736
+          image: us-central1-docker.pkg.dev/internal-sandbox-446612/velero-artifact/sample-python-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
