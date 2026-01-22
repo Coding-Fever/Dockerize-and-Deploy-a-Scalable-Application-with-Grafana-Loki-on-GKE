@@ -10,6 +10,7 @@ env:
   REPOSITORY: velero-artifact
   IMAGE_NAME: sample-python-app
   CLUSTER_NAME: istio-cluster
+  CLUSTER_LOCATION: us-central1-c
   NAMESPACE: sample-grafana
 
 jobs:
@@ -45,7 +46,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ env.CLUSTER_NAME }}
-          location: ${{ env.REGION }}
+          location: ${{ env.CLUSTER_LOCATION }}
 
       - name: Deploy manifests
         run: |
