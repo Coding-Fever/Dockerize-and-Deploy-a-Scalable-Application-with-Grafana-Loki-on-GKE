@@ -15,10 +15,13 @@ env:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 🔑 Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
@@ -32,6 +35,7 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
+          set -e
           IMAGE_URI=$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:latest
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
