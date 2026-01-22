@@ -5,11 +5,11 @@ on:
     branches: ["main"]
 
 env:
-  PROJECT_ID: digital-rhythm-471106-d7
-  REGION: asia-south1
-  REPOSITORY: docker-repo
+  PROJECT_ID: internal-sandbox-446612
+  REGION: us-central1
+  REPOSITORY: velero-artifact
   IMAGE_NAME: sample-python-app
-  CLUSTER_NAME: cluster-1
+  CLUSTER_NAME: istio-cluster
   NAMESPACE: sample-grafana
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_KEY }}
+          credentials_json: ${{ secrets.GCP_KEY_VELERO }}
 
       # 🔑 Configure Docker for Artifact Registry
       - name: Configure Docker for Artifact Registry
